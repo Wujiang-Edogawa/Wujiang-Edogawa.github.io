@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>千禧时光 | 梦核相册</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #8A2BE2;
+            --secondary: #FF69B4;
+            --bg: #0A0A1A;
+            --text: #F0F0FF;
+            --accent: #00FFFF;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+        }
+
+        h1, h2, h3 {
+            color: var(--accent);
+            text-shadow: 0 0 8px var(--accent);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .login-box, .upload-section {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--accent);
+            border-radius: 15px;
+            padding: 30px;
+            margin: 20px 0;
+            backdrop-filter: blur(10px);
+        }
+
+        input, select, button {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid var(--accent);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text);
+            font-size: 16px;
+        }
+
+        button {
+            background: var(--primary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            background: var(--secondary);
+            box-shadow: 0 0 15px var(--accent);
+        }
+
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .photo-item {
+            position: relative;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s ease;
+        }
+
+        .photo-item:hover {
+            transform: scale(1.05);
+        }
+
+        .photo-item img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+
+        .photo-info {
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            font-size: 14px;
+        }
+
+        .delete-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 0, 0, 0.7);
+            border: none;
+            padding: 5px 10px;
+            font-size: 12px;
+            width: auto;
+        }
+
+        .audio-player {
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .year-group {
+            margin: 30px 0;
+        }
+
+        .year-title {
+            color: var(--secondary);
+            font-size: 24px;
+            margin: 20px 0 10px;
+            text-align: left;
+        }
+
+        #bgm-audio {
+            width: 100%;
+            margin: 10px 0;
+        }
+
+        .book-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 720px;
+            margin: 0 auto 2rem;
+            perspective: 1500px;
+        }
+
+        .book-page {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            transform-style: preserve-3d;
+            transform-origin: left center;
+            transition: transform 0.6s cubic-bezier(0.25, 0.1, 0.25, 1);
+        }
+
+        .book-page.turn {
+            transform: rotateY(-180deg);
+        }
+
+        .book-page img {
+            width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+        }
+
+        .book-nav {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 15px;
+        }
+
+        .book-nav button {
+            width: auto;
+            padding: 6px 18px;
+        }
+
+        .book-nav button:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 登录界面 -->
+        <div id="login-section" class="login-box">
+            <h1>千禧时光</h1>
+            <p style="text-align: center; margin-bottom: 20px;">请输入你的「时光密钥」以开启回忆</p>
+            <input type="text" id="key-input" placeholder="任意字符即可，如：moon2025" maxlength="50">
+            <button onclick="login()">进入相册</button>
+        </div>
+
+        <!-- 主界面 -->
+        <div id="main-section" class="hidden">
+            <h1>千禧时光 · 梦核相册</h1>
+            <p style="text-align: center; margin-bottom: 20px;">密钥：<span id="user-key"></span></p>
+            
+            <div class="audio-player">
+                <h3>🎵 梦核 BGM · 千禧时光</h3>
+                <audio id="bgm-audio" controls loop>
+                    <source src="https://res.cloudinary.com/dv1ghhue3/video/upload/v1762852048/nop_tnar44.mp3" type="audio/mpeg">
+                </audio>
+            </div>
+
+            <div class="upload-section">
+                <h3>📤 上传新照片</h3>
+                <input type="file" id="file-input" accept="image/*">
+                <select id="year-select">
+                    <!-- 年份选项将通过JavaScript生成 -->
+                </select>
+                <button onclick="uploadPhoto()">上传</button>
+            </div>
+
+            <div id="gallery" class="gallery"></div>
+            
+            <div class="book-wrapper hidden" id="book-wrapper">
+                <div id="book-page" class="book-page"></div>
+                <div class="book-nav">
+                    <button id="prev-btn" onclick="navigatePage(-1)">◀ 上一页</button>
+                    <span id="page-info">1 / 1</span>
+                    <button id="next-btn" onclick="navigatePage(1)">下一页 ▶</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        let currentKey = '';
+        let photos = [];
+        let currentPage = 0;
+        const photosPerPage = 4;
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            generateYearOptions();
+            loadFromLocalStorage();
+        });
+
+        // 生成年份选项
+        function generateYearOptions() {
+            const yearSelect = document.getElementById('year-select');
+            const currentYear = new Date().getFullYear();
+            for (let year = currentYear; year >= 1950; year--) {
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year + '年';
+                yearSelect.appendChild(option);
+            }
+        }
+
+        // 登录
+        function login() {
+            const key = document.getElementById('key-input').value.trim();
+            if (!key) {
+                alert('密钥不能为空');
+                return;
+            }
+            currentKey = key;
+            document.getElementById('user-key').textContent = key;
+            document.getElementById('login-section').classList.add('hidden');
+            document.getElementById('main-section').classList.remove('hidden');
+            loadPhotos();
+        }
+
+        // 新 uploadPhoto：先拿签名 → 再直传 Cloudinary
+        async function uploadPhoto() {
+        const fileInput = document.getElementById('file-input');
+        const yearSelect = document.getElementById('year-select');
+        const file = fileInput.files[0];
+        if (!file) { alert('请先选择图片'); return; }
+
+        const folder = `time-keys/${currentKey}`;          // 与原 Python 保持一致
+        const signResp = await fetch('/api/sign', {        // ① 取签名
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ folder })
+        });
+        const { timestamp, signature } = await signResp.json();
+
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('api_key', '852246619638176');
+        fd.append('timestamp', timestamp);
+        fd.append('signature', signature);
+        fd.append('folder', folder);
+        fd.append('context', `taken_year=${yearSelect.value}|original_name=${file.name}|upload_time=${new Date().toLocaleString()}`);
+
+        const upResp = await fetch(`https://api.cloudinary.com/v1_1/dv1ghhue3/image/upload`, {
+                method: 'POST', body: fd
+        });
+        const data = await upResp.json();
+
+        // 把 Cloudinary 返回的 URL 存进本地数组
+        photos.push({
+                id: data.public_id,
+                url: data.secure_url,
+                name: file.name,
+                year: yearSelect.value,
+                uploadTime: new Date().toLocaleString()
+        });
+        saveToLocalStorage();
+        loadPhotos();
+        fileInput.value = '';
+        alert('上传成功！');
+        }
+
+        // 加载照片
+        function loadPhotos() {
+            const gallery = document.getElementById('gallery');
+            const bookWrapper = document.getElementById('book-wrapper');
+            
+            if (photos.length === 0) {
+                gallery.innerHTML = '<p style="text-align: center; opacity: 0.6;">还没有照片，先上传一张吧~</p>';
+                bookWrapper.classList.add('hidden');
+                return;
+            }
+
+            // 按年份分组
+            const groupedPhotos = {};
+            photos.forEach(photo => {
+                if (!groupedPhotos[photo.year]) {
+                    groupedPhotos[photo.year] = [];
+                }
+                groupedPhotos[photo.year].push(photo);
+            });
+
+            // 显示画廊
+            gallery.innerHTML = '';
+            Object.keys(groupedPhotos).sort((a, b) => b - a).forEach(year => {
+                const yearGroup = document.createElement('div');
+                yearGroup.className = 'year-group';
+                
+                const yearTitle = document.createElement('h2');
+                yearTitle.className = 'year-title';
+                yearTitle.textContent = year + '年';
+                yearGroup.appendChild(yearTitle);
+
+                const yearPhotos = document.createElement('div');
+                yearPhotos.className = 'gallery';
+                
+                groupedPhotos[year].forEach(photo => {
+                    const photoItem = createPhotoElement(photo);
+                    yearPhotos.appendChild(photoItem);
+                });
+                
+                yearGroup.appendChild(yearPhotos);
+                gallery.appendChild(yearGroup);
+            });
+
+            // 显示书页模式
+            displayBookMode();
+        }
+
+        // 创建照片元素
+        function createPhotoElement(photo) {
+            const photoItem = document.createElement('div');
+            photoItem.className = 'photo-item';
+            
+            const img = document.createElement('img');
+            img.src = photo.url;
+            img.alt = photo.name;
+            
+            const photoInfo = document.createElement('div');
+            photoInfo.className = 'photo-info';
+            photoInfo.innerHTML = `
+                <div>${photo.name}</div>
+                <div style="font-size: 12px; opacity: 0.7;">${photo.uploadTime}</div>
+            `;
+            
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'delete-btn';
+            deleteBtn.textContent = '🗑️';
+            deleteBtn.onclick = function() {
+                if (confirm('确定要删除这张照片吗？')) {
+                    deletePhoto(photo.id);
+                }
+            };
+            
+            photoItem.appendChild(img);
+            photoItem.appendChild(photoInfo);
+            photoItem.appendChild(deleteBtn);
+            
+            return photoItem;
+        }
+
+        // 删除照片
+        async function deletePhoto(publicId) {
+            if (!confirm('确定删除？')) return;
+            await fetch('/api/sign', {          // 复用同一个云函数拿签名
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ public_id: publicId })
+            });
+            photos = photos.filter(p => p.id !== publicId);
+            saveToLocalStorage();
+            loadPhotos();
+        }
+
+        // 书页模式显示
+        function displayBookMode() {
+            const bookWrapper = document.getElementById('book-wrapper');
+            const bookPage = document.getElementById('book-page');
+            
+            if (photos.length === 0) {
+                bookWrapper.classList.add('hidden');
+                return;
+            }
+            
+            bookWrapper.classList.remove('hidden');
+            updateBookPage();
+        }
+
+        // 更新书页内容
+        function updateBookPage() {
+            const bookPage = document.getElementById('book-page');
+            const start = currentPage * photosPerPage;
+            const pagePhotos = photos.slice(start, start + photosPerPage);
+            
+            bookPage.innerHTML = pagePhotos.map(photo => 
+                `<div><img src="${photo.url}" title="${photo.name}" /></div>`
+            ).join('');
+            
+            // 更新页码信息
+            const totalPages = Math.ceil(photos.length / photosPerPage);
+            document.getElementById('page-info').textContent = `${currentPage + 1} / ${totalPages}`;
+            
+            // 更新按钮状态
+            document.getElementById('prev-btn').disabled = currentPage === 0;
+            document.getElementById('next-btn').disabled = currentPage >= totalPages - 1;
+        }
+
+        // 翻页
+        function navigatePage(delta) {
+            const totalPages = Math.ceil(photos.length / photosPerPage);
+            const newPage = currentPage + delta;
+            
+            if (newPage >= 0 && newPage < totalPages) {
+                // 添加翻页动画
+                const bookPage = document.getElementById('book-page');
+                bookPage.classList.add('turn');
+                
+                setTimeout(() => {
+                    currentPage = newPage;
+                    updateBookPage();
+                    bookPage.classList.remove('turn');
+                }, 300);
+            }
+        }
+
+        // 本地存储
+        function saveToLocalStorage() {
+            localStorage.setItem(`photos_${currentKey}`, JSON.stringify(photos));
+        }
+
+        function loadFromLocalStorage() {
+            if (currentKey) {
+                const stored = localStorage.getItem(`photos_${currentKey}`);
+                if (stored) {
+                    photos = JSON.parse(stored);
+                    loadPhotos();
+                }
+            }
+        }
+
+        // 获取EXIF信息
+        function getExifYear(file) {
+            // 这里需要实现EXIF读取功能
+            // 为简化示例，返回空字符串
+            return '';
+        }
+    </script>
+</body>
+</html>
